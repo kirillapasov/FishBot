@@ -1,7 +1,10 @@
 package com.example.FishBot;
 
 import com.example.FishBot.config.BotConfig;
+import com.example.FishBot.model.FishingPlace;
+import com.example.FishBot.service.FishingPlaceService;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
@@ -9,10 +12,12 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+
 @Component
 @AllArgsConstructor
 public class TelegramBot extends TelegramLongPollingBot {
     private final BotConfig botConfig;
+    private final FishingPlaceService fishingPlaceService;
 
     @Override
     public String getBotUsername() {
@@ -26,23 +31,22 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-
-        if(update.hasMessage() && update.getMessage().hasText()){
+        if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
             if (messageText.equals("/start")) {
                 startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+            } else if (messageText.equals("/place")) {
+                handlePlaceCommand(chatId);
+            } else {
+                sendMessage(chatId, "Введите корректную команду");
             }
-            else if (messageText.startsWith("/location")) {
-                handleLocationCommand(chatId, messageText);
-            }
-            else
-                sendMessage(chatId, "Введите коректную команду");
         }
     }
 
+
     private void startCommandReceived(Long chatId, String name) {
-        String answer = "Здравствуйте, используйте команду /location <Широта> <Долгота>";
+        String answer = "Здравствуйте, используйте команду /place для получения случайного рыболовного места.";
         sendMessage(chatId, answer);
     }
 
@@ -71,17 +75,30 @@ public class TelegramBot extends TelegramLongPollingBot {
             sendMessage(chatId, "Неверный формат координат. Попробуйте снова.");
         }
     }
+    private void handlePlaceCommand(long chatId) {
+        FishingPlace place = fishingPlaceService.getRandomFishingPlace();
+        sendPlaceInfo(chatId, place);
+    }
 
     private void sendLocation(long chatId, double latitude, double longitude) {
         SendLocation locationMessage = new SendLocation();
         locationMessage.setChatId(chatId);
         locationMessage.setLatitude(latitude);
         locationMessage.setLongitude(longitude);
-
         try {
             execute(locationMessage);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }
+    private void sendPlaceInfo(long chatId, FishingPlace place) {
+        sendMessage(chatId, "Название: " + place.getName() + "\nОписание: " + place.getDescription() + "\nКоординаты: " + place.getCoordinates());
+
+        String[] coords = place.getCoordinates().split(",");
+        double latitude = Double.parseDouble(coords[0].trim());
+        double longitude = Double.parseDouble(coords[1].trim());
+
+        sendLocation(chatId, latitude, longitude);
+    }
+
 }
