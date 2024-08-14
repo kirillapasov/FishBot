@@ -1,10 +1,8 @@
-package com.example.FishBot;
+package com.example.FishBot.model;
 
 import com.example.FishBot.config.BotConfig;
-import com.example.FishBot.model.FishingPlace;
 import com.example.FishBot.service.FishingPlaceService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendLocation;

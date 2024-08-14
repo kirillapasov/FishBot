@@ -1,6 +1,6 @@
 package com.example.FishBot.config;
 
-import com.example.FishBot.TelegramBot;
+import com.example.FishBot.model.TelegramBot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;

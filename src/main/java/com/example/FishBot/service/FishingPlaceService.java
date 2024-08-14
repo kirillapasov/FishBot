@@ -19,7 +19,7 @@ public class FishingPlaceService {
 
     private void initializeFishingPlaces() {
         fishingPlaces.add(new FishingPlace("Река Дон", "Популярное место для рыбалки на леща и судака.",
-                "51.6551, 39.1606"));
+                "51.526495, 39.092281"));
         fishingPlaces.add(new FishingPlace("Рыбодром № 2", "Место для спортивной ловли различных" +
                 " видов рыб, на месте находятся бетонные плиты, рекомендуется иметь соответсвующие подставки",
                 "51.619266, 39.217416"));
@@ -33,6 +33,7 @@ public class FishingPlaceService {
         //Todo добавить другие места, интегрировать БД для удобного хранения, сделать DTO
     }
 
+    //Todo Изменить реализацию получения случайного рыболовного места
     public FishingPlace getRandomFishingPlace() {
         int index = random.nextInt(fishingPlaces.size());
         return fishingPlaces.get(index);
