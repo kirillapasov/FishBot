@@ -8,7 +8,13 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Component
@@ -27,6 +33,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         return botConfig.getToken();
     }
 
+
+    //Todo добавить исключения
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -34,7 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
             if (messageText.equals("/start")) {
                 startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
-            } else if (messageText.equals("/place")) {
+            } else if (messageText.equals("Получить рыболовное место")) {
                 handlePlaceCommand(chatId);
             } else {
                 sendMessage(chatId, "Введите корректную команду");
@@ -44,14 +52,40 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
     private void startCommandReceived(Long chatId, String name) {
-        String answer = "Здравствуйте, используйте команду /place для получения случайного рыболовного места.";
-        sendMessage(chatId, answer);
+        String answer = "Здравствуйте, используйте команду ниже для получения случайного рыболовного места.";
+        sendMessageWithKeyboard(chatId, answer);
     }
 
     private void sendMessage(Long chatId, String textToSend){
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(String.valueOf(chatId));
         sendMessage.setText(textToSend);
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+    private void sendMessageWithKeyboard(Long chatId, String textToSend) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(String.valueOf(chatId));
+        sendMessage.setText(textToSend);
+
+        // Создаем клавиатуру
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        // Первый ряд клавиатуры с одной кнопкой
+        KeyboardRow row = new KeyboardRow();
+        row.add(new KeyboardButton("Получить рыболовное место"));
+
+        // Добавляем ряд в клавиатуру
+        keyboard.add(row);
+
+        // Устанавливаем клавиатуру в сообщение
+        keyboardMarkup.setKeyboard(keyboard);
+        sendMessage.setReplyMarkup(keyboardMarkup);
+
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
@@ -90,7 +124,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
     private void sendPlaceInfo(long chatId, FishingPlace place) {
-        sendMessage(chatId, "Название: " + place.getName() + "\nОписание: " + place.getDescription() + "\nКоординаты: " + place.getCoordinates());
+        sendMessage(chatId, "Название: " + place.getName() + "\nОписание: "
+                + place.getDescription() + "\nКоординаты: " + place.getCoordinates());
 
         String[] coords = place.getCoordinates().split(",");
         double latitude = Double.parseDouble(coords[0].trim());
