@@ -42,8 +42,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
             if (messageText.equals("/start")) {
                 startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
-            } else if (messageText.equals("Получить рыболовное место")) {
-                handlePlaceCommand(chatId);
+            } else if (messageText.equals("ℹ️ Информация")) {
+                handleInfoCommand(chatId); // Обработка команды "Информация"
+                startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+            } else if (messageText.equals("🎣 Рыболовное место")) {
+                handlePlaceCommand(chatId); // Обработка команды "Рыболовное место"
+                startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
             } else {
                 sendMessage(chatId, "Введите корректную команду");
             }
@@ -52,7 +56,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 
     private void startCommandReceived(Long chatId, String name) {
-        String answer = "Здравствуйте, используйте команду ниже для получения случайного рыболовного места.";
+        String answer = "Используйте команды ниже, чтобы продолжить работу";
         sendMessageWithKeyboard(chatId, answer);
     }
 
@@ -75,15 +79,21 @@ public class TelegramBot extends TelegramLongPollingBot {
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> keyboard = new ArrayList<>();
 
-        // Первый ряд клавиатуры с одной кнопкой
+        // Первый ряд клавиатуры с двумя кнопками
         KeyboardRow row = new KeyboardRow();
-        row.add(new KeyboardButton("Получить рыболовное место"));
+        row.add(new KeyboardButton("ℹ️ Информация"));
+        row.add(new KeyboardButton("🎣 Рыболовное место"));
 
         // Добавляем ряд в клавиатуру
         keyboard.add(row);
 
         // Устанавливаем клавиатуру в сообщение
         keyboardMarkup.setKeyboard(keyboard);
+
+        // Настраиваем клавиатуру
+        keyboardMarkup.setResizeKeyboard(true); // Клавиатура автоматически изменяет размер в зависимости от текста
+        keyboardMarkup.setOneTimeKeyboard(true); // Клавиатура исчезает после нажатия
+
         sendMessage.setReplyMarkup(keyboardMarkup);
 
         try {
@@ -91,6 +101,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private void handleInfoCommand(long chatId) {
+        String infoMessage = "Этот бот помогает находить лучшие рыболовные места в Воронежской области." +
+                " Вы можете добавлять новые рыболовные места, или получать координаты случайного места";
+        sendMessage(chatId, infoMessage);
     }
     private void handleLocationCommand(long chatId, String messageText) {
         try {
