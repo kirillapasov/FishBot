@@ -11,8 +11,6 @@ import java.util.Random;
 @Service
 @Component
 public class FishingPlaceService {
-
-
     private final FishingPlaceRepository fishingPlaceRepository;
     private final Random random = new Random();
 
@@ -28,7 +26,5 @@ public class FishingPlaceService {
         }
         return allPlaces.get(random.nextInt(allPlaces.size()));
     }
-
-
 }
 

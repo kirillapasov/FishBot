@@ -2,6 +2,7 @@ package com.example.FishBot;
 
 import com.example.FishBot.config.BotConfig;
 import com.example.FishBot.model.FishingPlace;
+import com.example.FishBot.model.UserState;
 import com.example.FishBot.service.FishingPlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,13 +15,21 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 //Todo добавить возможность поиска мест по типу ловли (плат/обыч) по местоположению
 @Component
 
 public class TelegramBot extends TelegramLongPollingBot {
+    private Map<Long, UserState> userStates = new HashMap<>();
+    private Map<Long, FishingPlace> tempFishingPlaces = new HashMap<>();
     private final BotConfig botConfig;
     private final FishingPlaceService fishingPlaceService;
 
@@ -46,19 +55,38 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
-            if (messageText.equals("/start")) {
-                startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+            if (messageText.equals("✅ Добавить рыболовное место")) {
+                userStates.put(chatId, UserState.AWAITING_NAME);
+                tempFishingPlaces.put(chatId, new FishingPlace());
+                sendMessage(chatId, "Введите название рыболовного места:");
             } else if (messageText.equals("ℹ️ Информация")) {
-                handleInfoCommand(chatId); // Обработка команды "Информация"
+                handleInfoCommand(chatId);
                 startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
             } else if (messageText.equals("🎣 Рыболовное место")) {
-                handlePlaceCommand(chatId); // Обработка команды "Рыболовное место"
+                handlePlaceCommand(chatId);
                 startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
-            } else {
-                sendMessage(chatId, "Введите корректную команду");
+            }  else {
+                // Проверяем текущее состояние пользователя
+                UserState state = userStates.getOrDefault(chatId, UserState.DEFAULT);
+
+                switch (state) {
+                    case AWAITING_NAME:
+                        handleNameInput(chatId, messageText);
+                        break;
+                    case AWAITING_COORDINATES:
+                        handleCoordinatesInput(chatId, messageText);
+                        break;
+                    case AWAITING_DESCRIPTION:
+                        handleDescriptionInput(chatId, messageText);
+                        break;
+                    default:
+                        sendMessage(chatId, "Используйте доступные команды.");
+                }
             }
         }
     }
+
+
 
 
     private void startCommandReceived(Long chatId, String name) {
@@ -89,6 +117,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         KeyboardRow row = new KeyboardRow();
         row.add(new KeyboardButton("🎣 Рыболовное место"));
         row.add(new KeyboardButton("ℹ️ Информация"));
+        row.add(new KeyboardButton("✅ Добавить рыболовное место"));
 
 
         // Добавляем ряд в клавиатуру
@@ -130,6 +159,9 @@ public class TelegramBot extends TelegramLongPollingBot {
             sendMessage(chatId, "Неверный формат координат. Попробуйте снова.");
         }
     }
+    private void handleAddCommand(long chatId) {
+        sendMessage(chatId, "вы пытаетесь добавить рыболовное место");
+    }
     private void handlePlaceCommand(long chatId) {
         FishingPlace place = fishingPlaceService.getRandomFishingPlace();
         sendPlaceInfo(chatId, place);
@@ -156,5 +188,57 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         sendLocation(chatId, latitude, longitude);
     }
+
+    private void handleNameInput(Long chatId, String name) {
+        FishingPlace place = tempFishingPlaces.get(chatId);
+        place.setName(name);
+        userStates.put(chatId, UserState.AWAITING_COORDINATES);
+        sendMessage(chatId, "Введите координаты (в формате Широта,Долгота):");
+    }
+
+    private void handleCoordinatesInput(Long chatId, String coordinates) {
+        FishingPlace place = tempFishingPlaces.get(chatId);
+        place.setCoordinates(coordinates);
+        userStates.put(chatId, UserState.AWAITING_DESCRIPTION);
+        sendMessage(chatId, "Введите описание рыболовного места:");
+    }
+
+    private void handleDescriptionInput(Long chatId, String description) {
+        FishingPlace place = tempFishingPlaces.get(chatId);
+        place.setDescription(description);
+
+        // Сохранение места в файл
+        saveFishingPlaceToFile(place);
+
+        sendMessage(chatId, "Новое рыболовное место успешно добавлено!");
+        userStates.put(chatId, UserState.DEFAULT);
+        tempFishingPlaces.remove(chatId);
+    }
+    private void saveFishingPlaceToFile(FishingPlace place) {
+        try {
+            // Получаем путь к файлу
+            File file = new File("fishing_places.txt");
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            // Открываем поток для записи в файл
+            FileWriter fileWriter = new FileWriter(file, true);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+
+            // Записываем данные рыболовного места
+            bufferedWriter.write("Название: " + place.getName() + "\n");
+            bufferedWriter.write("Координаты: " + place.getCoordinates() + "\n");
+            bufferedWriter.write("Описание: " + place.getDescription() + "\n");
+            bufferedWriter.write("-----------------------------\n");
+
+            // Закрываем поток
+            bufferedWriter.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }
