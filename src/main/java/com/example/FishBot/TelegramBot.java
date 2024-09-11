@@ -1,8 +1,9 @@
-package com.example.FishBot.model;
+package com.example.FishBot;
 
 import com.example.FishBot.config.BotConfig;
+import com.example.FishBot.model.FishingPlace;
 import com.example.FishBot.service.FishingPlaceService;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendLocation;
@@ -16,13 +17,18 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.ArrayList;
 import java.util.List;
 
-
+//Todo добавить возможность поиска мест по типу ловли (плат/обыч) по местоположению
 @Component
-@AllArgsConstructor
+
 public class TelegramBot extends TelegramLongPollingBot {
     private final BotConfig botConfig;
     private final FishingPlaceService fishingPlaceService;
 
+    @Autowired
+    public TelegramBot(BotConfig botConfig, FishingPlaceService fishingPlaceService) {
+        this.botConfig = botConfig;
+        this.fishingPlaceService = fishingPlaceService;
+    }
     @Override
     public String getBotUsername() {
         return botConfig.getBotName();
@@ -81,8 +87,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         // Первый ряд клавиатуры с двумя кнопками
         KeyboardRow row = new KeyboardRow();
-        row.add(new KeyboardButton("ℹ️ Информация"));
         row.add(new KeyboardButton("🎣 Рыболовное место"));
+        row.add(new KeyboardButton("ℹ️ Информация"));
+
 
         // Добавляем ряд в клавиатуру
         keyboard.add(row);

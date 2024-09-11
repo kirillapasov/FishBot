@@ -2,13 +2,13 @@ package com.example.FishBot.config;
 
 import lombok.Data;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
+//Todo Перенести конфиг в проперти
 @Configuration
 @Component
 @Data
-@PropertySource("application.properties")
+
 
 public class BotConfig {
     private  String botName = "CarpFishing36Bot";
